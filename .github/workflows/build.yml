@@ -36,13 +36,10 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
       run: |
         BINARY_NAME=eno
-        if [ "$GOOS" = "windows" ]; then
-          BINARY_NAME="${BINARY_NAME}.exe"
-        fi
         
         OUTPUT_NAME="${BINARY_NAME}-${GOOS}-${GOARCH}"
         if [ "$GOOS" = "windows" ]; then
-          OUTPUT_NAME="${OUTPUT_NAME}.exe"
+          OUTPUT_NAME="${BINARY_NAME}.exe"
         fi
         
         go build -ldflags="-s -w" -o "$OUTPUT_NAME" ./cmd/eno
