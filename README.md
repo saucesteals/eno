@@ -7,13 +7,13 @@ Create and manage virtual credit cards on [Eno](https://www.capitalone.com/digit
 > Using this client may violate Capital One's Terms of Service.
 > By using this client, you acknowledge and accept all associated risks.
 
+## Installation
+
+- Download the latest release from the [releases page](https://github.com/saucesteals/eno/releases) and move it to your `PATH`
+
+- Or build from source `go install github.com/saucesteals/eno/cmd/eno@latest`
+
 ## Usage
-
-- Install the latest version
-
-```sh
-go install github.com/saucesteals/eno/cmd/eno@latest
-```
 
 - Run the interactive CLI
 
