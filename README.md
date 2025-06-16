@@ -1,6 +1,6 @@
 # Eno
 
-Create and manage virtual credit cards on [Eno](https://www.capitalone.com/digital/tools/eno/)
+Create and manage virtual cards on [Eno](https://www.capitalone.com/digital/tools/eno/)
 
 > [!CAUTION]
 > This is an **unofficial** client that is not affiliated with or endorsed by Capital One.
