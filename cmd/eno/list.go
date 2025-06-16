@@ -29,5 +29,7 @@ func list(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) erro
 		}
 	}
 
+	log.Info("Found cards", "count", total)
+
 	return nil
 }

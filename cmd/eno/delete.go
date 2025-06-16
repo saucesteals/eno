@@ -35,10 +35,13 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 		if page.Count <= len(cards) {
 			break
 		}
-
 	}
 
-	fmt.Printf("Found %d cards\n", len(cards))
+	log.Info("Found cards", "count", len(cards))
+	if len(cards) == 0 {
+		return nil
+	}
+
 	for i, card := range cards {
 		fmt.Printf("%d. %s (%s)\n", i+1, card.TokenName, card.TokenLastFour)
 	}
