@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -45,6 +43,11 @@ func newSynchToken() string {
 	return string(now)
 }
 
+type protectedRequest struct {
+	RequestHeaders map[string]string `json:"request_headers"`
+	RequestBody    json.RawMessage   `json:"request_body"`
+}
+
 func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, key *jose.JSONWebKey) (*http.Request, error) {
 	isProtected := strings.HasPrefix(path, "web-api/tiger/protected")
 	isOidc := strings.HasPrefix(path, "oidc/")
@@ -71,22 +74,26 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 				return nil, err
 			}
 
-			options := jose.EncrypterOptions{
-				ExtraHeaders: map[jose.HeaderKey]any{
-					"EVT_SYNCH_TOKEN": synchToken,
-					"content-type":    "application/json",
-				},
-			}
-
-			encrypter, err := jose.NewEncrypter(jose.A128GCM, jose.Recipient{
+			encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{
 				Algorithm: jose.RSA_OAEP_256,
 				Key:       serverKey,
-			}, &options)
+			}, nil)
 			if err != nil {
 				return nil, err
 			}
 
-			encrypted, err := encrypter.Encrypt(payload)
+			protectedPayload, err := json.Marshal(protectedRequest{
+				RequestHeaders: map[string]string{
+					"EVT_SYNCH_TOKEN": synchToken,
+					"content-type":    "application/json",
+				},
+				RequestBody: payload,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			encrypted, err := encrypter.Encrypt(protectedPayload)
 			if err != nil {
 				return nil, err
 			}
@@ -156,6 +163,11 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 	return req, nil
 }
 
+type protectedResponse struct {
+	ResponseHeaders map[string]string `json:"response_headers"`
+	ResponseBody    string            `json:"response_body"`
+}
+
 func (a *Web) do(req *http.Request, body any, key *rsa.PrivateKey) error {
 	res, err := a.api.Do(req)
 	if err != nil {
@@ -177,12 +189,23 @@ func (a *Web) do(req *http.Request, body any, key *rsa.PrivateKey) error {
 			return err
 		}
 
-		decrypted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, key, response, []byte(""))
+		encrypted, err := jose.ParseEncrypted(string(response))
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(decrypted, body)
+		decrypted, err := encrypted.Decrypt(key)
+		if err != nil {
+			return err
+		}
+
+		var protectedResponse protectedResponse
+		err = json.Unmarshal(decrypted, &protectedResponse)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal([]byte(protectedResponse.ResponseBody), body)
 		if err != nil {
 			return err
 		}
