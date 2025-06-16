@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -215,12 +216,11 @@ func main() {
 		}
 	}
 }
-
 func ask(prompt string) string {
 	fmt.Printf("[?] %s: ", prompt)
-	var input string
-	fmt.Scanln(&input)
-	return input
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
 }
 
 func loadProfile() (*Profile, error) {
