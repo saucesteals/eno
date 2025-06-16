@@ -169,7 +169,12 @@ func (a *API) Login(ctx context.Context) error {
 	}
 	defer page.Close()
 
-	humanType := func(element *rod.Element, text string) error {
+	typeElement := func(selector string, text string) error {
+		element, err := page.Element(selector)
+		if err != nil {
+			return err
+		}
+
 		for _, char := range text {
 			err := element.Input(string(char))
 			if err != nil {
@@ -182,7 +187,7 @@ func (a *API) Login(ctx context.Context) error {
 		return nil
 	}
 
-	humanClick := func(selector string) error {
+	clickElement := func(selector string) error {
 		_, err := page.Eval(`(selector) => {
 			const element = document.querySelector(selector);
 			if (element) {
@@ -193,36 +198,25 @@ func (a *API) Login(ctx context.Context) error {
 			return err
 		}
 
-		time.Sleep(1500 * time.Millisecond)
 		return nil
 	}
 
-	username, err := page.Element(`input[data-testtarget="username-usernameInputField"]`)
+	err = typeElement(`input[data-testtarget="username-usernameInputField"]`, a.Credentials.Username)
 	if err != nil {
 		return err
 	}
 
-	err = humanType(username, a.Credentials.Username)
+	err = typeElement(`#pwInputField`, a.Credentials.Password)
 	if err != nil {
 		return err
 	}
 
-	password, err := page.Element(`#pwInputField`)
+	err = clickElement(`input[type="checkbox"]`)
 	if err != nil {
 		return err
 	}
 
-	err = humanType(password, a.Credentials.Password)
-	if err != nil {
-		return err
-	}
-
-	err = humanClick(`input[type="checkbox"]`)
-	if err != nil {
-		return err
-	}
-
-	err = humanClick(`button[data-testtarget="sign-in-submit-button"]`)
+	err = clickElement(`button[data-testtarget="sign-in-submit-button"]`)
 	if err != nil {
 		return err
 	}

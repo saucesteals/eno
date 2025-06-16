@@ -1,10 +1,7 @@
 package extension
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"github.com/saucesteals/eno/api"
@@ -31,7 +28,6 @@ type Extension struct {
 	api *api.API
 
 	device            Device
-	fingerprint       string
 	clientReferenceId string
 	headers           http.Header
 	session           *sessionDetails
@@ -40,20 +36,12 @@ type Extension struct {
 }
 
 func New(api *api.API, device Device) (*Extension, error) {
-	fingerprint := generateFingerprint(device)
-
-	fp, err := json.Marshal(fingerprint)
-	if err != nil {
-		return nil, err
-	}
-
-	clientReferenceId := generateClientCorrelationId(device)
+	clientReferenceId := generateClientCorrelationId(device, api.GetUserAgent())
 
 	return &Extension{
 		api:               api,
 		headers:           http.Header{},
 		device:            device,
-		fingerprint:       url.QueryEscape(base64.StdEncoding.EncodeToString(fp)),
 		clientReferenceId: clientReferenceId,
 		session:           &sessionDetails{},
 	}, nil

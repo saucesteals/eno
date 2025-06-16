@@ -29,8 +29,13 @@ func (a *Extension) GetSession(ctx context.Context) (*Session, error) {
 		IsExpressLogin    bool   `json:"isExpressLogin"`
 	}
 
+	fingerprint, err := a.generateFingerprint()
+	if err != nil {
+		return nil, err
+	}
+
 	payload := Payload{
-		DeviceFingerPrint: a.fingerprint,
+		DeviceFingerPrint: fingerprint,
 		AuthTransactionID: a.device.AuthTransactionId,
 		DeviceExtensionid: a.device.ExtensionId,
 		IsExpressLogin:    false,

@@ -6,35 +6,11 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/saucesteals/eno/api"
 	"github.com/saucesteals/eno/extension"
 )
 
-type MdxInfo struct {
-	MdxURLID      string `json:"mdxUrlId"`
-	MerchantURL   string `json:"merchantUrl"`
-	Name          string `json:"name"`
-	MdxID         string `json:"mdxId"`
-	Color         any    `json:"color"`
-	ColorContrast any    `json:"colorContrast"`
-	ImageURL      any    `json:"imageUrl"`
-}
-type Token struct {
-	TokenUpdatedTimestamp        string  `json:"tokenUpdatedTimestamp"`
-	DerivedStatus                string  `json:"derivedStatus"`
-	TokenReferenceID             string  `json:"tokenReferenceId"`
-	TokenName                    string  `json:"tokenName"`
-	FormattedTokenExpirationDate string  `json:"formattedTokenExpirationDate"`
-	CardReferenceID              string  `json:"cardReferenceId"`
-	TokenCreatedTimestamp        string  `json:"tokenCreatedTimestamp"`
-	TokenType                    string  `json:"tokenType"`
-	HasTokenExpired              bool    `json:"hasTokenExpired"`
-	TokenLastFour                string  `json:"tokenLastFour"`
-	DurationHasPassed            bool    `json:"durationHasPassed"`
-	TokenStatus                  string  `json:"tokenStatus"`
-	MdxInfo                      MdxInfo `json:"mdxInfo"`
-}
-
-func (a *Web) CreateToken(ctx context.Context, card extension.PaymentCard, tokenName string) (Token, error) {
+func (a *Web) CreateToken(ctx context.Context, tokenName string, card extension.PaymentCard) (api.Token, error) {
 	type Payload struct {
 		CardReferenceID string `json:"cardReferenceId"`
 		IsOneTimeUse    bool   `json:"isOneTimeUse"`
@@ -55,17 +31,17 @@ func (a *Web) CreateToken(ctx context.Context, card extension.PaymentCard, token
 
 	clientKey, clientPrivateKey, err := a.GenerateJWK(ctx)
 	if err != nil {
-		return Token{}, err
+		return api.Token{}, err
 	}
 
 	req, err := a.newWebRequest(ctx, http.MethodPost, "web-api/tiger/protected/222543/commerce-virtual-numbers", payload, clientKey)
 	if err != nil {
-		return Token{}, err
+		return api.Token{}, err
 	}
 
-	var token Token
+	var token api.Token
 	if err := a.do(req, &token, clientPrivateKey); err != nil {
-		return Token{}, err
+		return api.Token{}, err
 	}
 
 	return token, nil
@@ -98,13 +74,39 @@ func (a *Web) UpdateToken(ctx context.Context, update UpdateTokenPayload) error 
 	return nil
 }
 
+type MdxInfo struct {
+	MdxURLID      string `json:"mdxUrlId"`
+	MerchantURL   string `json:"merchantUrl"`
+	Name          string `json:"name"`
+	MdxID         string `json:"mdxId"`
+	Color         any    `json:"color"`
+	ColorContrast any    `json:"colorContrast"`
+	ImageURL      any    `json:"imageUrl"`
+}
+
+type ListedToken struct {
+	TokenUpdatedTimestamp        string  `json:"tokenUpdatedTimestamp"`
+	DerivedStatus                string  `json:"derivedStatus"`
+	TokenReferenceID             string  `json:"tokenReferenceId"`
+	TokenName                    string  `json:"tokenName"`
+	FormattedTokenExpirationDate string  `json:"formattedTokenExpirationDate"`
+	CardReferenceID              string  `json:"cardReferenceId"`
+	TokenCreatedTimestamp        string  `json:"tokenCreatedTimestamp"`
+	TokenType                    string  `json:"tokenType"`
+	HasTokenExpired              bool    `json:"hasTokenExpired"`
+	TokenLastFour                string  `json:"tokenLastFour"`
+	DurationHasPassed            bool    `json:"durationHasPassed"`
+	TokenStatus                  string  `json:"tokenStatus"`
+	MdxInfo                      MdxInfo `json:"mdxInfo"`
+}
+
 type ListTokensResponse struct {
-	Entries         []Token `json:"entries"`
-	Limit           int     `json:"limit"`
-	Offset          int     `json:"offset"`
-	Count           int     `json:"count"`
-	CachedCount     int     `json:"cachedCount"`
-	UnfilteredCount int     `json:"unfilteredCount"`
+	Entries         []ListedToken `json:"entries"`
+	Limit           int           `json:"limit"`
+	Offset          int           `json:"offset"`
+	Count           int           `json:"count"`
+	CachedCount     int           `json:"cachedCount"`
+	UnfilteredCount int           `json:"unfilteredCount"`
 }
 
 func (a *Web) ListTokens(ctx context.Context, card extension.PaymentCard, nameFilter string, offset int, limit int) (ListTokensResponse, error) {
