@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -37,6 +38,24 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 		}
 	}
 
+	if minDayAge > 0 {
+		cards = slices.DeleteFunc(cards, func(card web.ListedToken) bool {
+			tokenCreatedAt, err := time.ParseInLocation("2006-01-02T15:04:05", card.TokenCreatedTimestamp, time.UTC)
+			if err != nil {
+				log.Error("Failed to parse token created at", "error", err)
+				return true
+			}
+
+			dayAge := int(time.Since(tokenCreatedAt).Hours() / 24)
+			if dayAge < minDayAge {
+				log.Info("Skipping card", "card", card.TokenName, "age", dayAge)
+				return true
+			}
+
+			return false
+		})
+	}
+
 	log.Info("Found cards", "count", len(cards))
 	if len(cards) == 0 {
 		return nil
@@ -53,17 +72,6 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 
 	cardLastFour := card.CardNumber[len(card.CardNumber)-4:]
 	for _, token := range cards {
-		tokenCreatedAt, err := time.ParseInLocation("2006-01-02T15:04:05", token.TokenCreatedTimestamp, time.UTC)
-		if err != nil {
-			return fmt.Errorf("invalid token created at: %w", err)
-		}
-
-		dayAge := time.Since(tokenCreatedAt).Hours() / 24
-		if dayAge < float64(minDayAge) {
-			fmt.Printf("Skipping %s (%.2f days old)\n", token.TokenName, dayAge)
-			continue
-		}
-
 		fmt.Printf("Deleting %s... ", token.TokenName)
 
 		err = capWeb.UpdateToken(ctx, web.UpdateTokenPayload{
