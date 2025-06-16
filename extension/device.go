@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mileusna/useragent"
 )
 
 type Device struct {
 	AuthTransactionId string
 	ExtensionId       string
-	UserAgent         UserAgent
 }
 
 func GenerateExtensionId() string {
@@ -37,10 +35,9 @@ func GenerateAuthTransactionId() string {
 	return "GO_" + uuid.NewString()
 }
 
-func GenerateDevice(userAgent string) Device {
+func GenerateDevice() Device {
 	return Device{
 		ExtensionId:       GenerateExtensionId(),
 		AuthTransactionId: GenerateAuthTransactionId(),
-		UserAgent:         UserAgent{UserAgent: useragent.Parse(userAgent)},
 	}
 }

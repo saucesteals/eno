@@ -1,13 +1,20 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
+	"github.com/mileusna/useragent"
 	http "github.com/saucesteals/fhttp"
 	"github.com/saucesteals/fhttp/cookiejar"
 
 	"github.com/saucesteals/mimic"
+)
+
+var (
+	ErrRateLimited = errors.New("rate limited")
+	chromeVersion  = "137.0.0.0"
 )
 
 type Credentials struct {
@@ -28,7 +35,7 @@ type API struct {
 
 	client    *http.Client
 	jar       *cookiejar.Jar
-	userAgent string
+	userAgent useragent.UserAgent
 }
 
 func New(opts Options) (*API, error) {
@@ -38,7 +45,7 @@ func New(opts Options) (*API, error) {
 	}
 
 	transport, err := mimic.NewTransport(mimic.TransportOptions{
-		Version:  "137.0.0.0",
+		Version:  chromeVersion,
 		Brand:    mimic.BrandChrome,
 		Platform: mimic.PlatformMac,
 		Transport: &http.Transport{
@@ -49,8 +56,8 @@ func New(opts Options) (*API, error) {
 		return nil, err
 	}
 
-	userAgent := transport.DefaultHeaders.Get("User-Agent")
-	if userAgent == "" {
+	userAgent := useragent.Parse(transport.DefaultHeaders.Get("User-Agent"))
+	if userAgent.String == "" {
 		return nil, fmt.Errorf("no user agent found")
 	}
 
@@ -71,7 +78,7 @@ func New(opts Options) (*API, error) {
 	return a, nil
 }
 
-func (a *API) GetUserAgent() string {
+func (a *API) GetUserAgent() useragent.UserAgent {
 	return a.userAgent
 }
 
@@ -80,6 +87,15 @@ func (a *API) GetCredentials() Credentials {
 }
 
 func (a *API) Do(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", a.userAgent)
-	return a.client.Do(req)
+	res, err := a.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode == http.StatusTooManyRequests {
+		res.Body.Close()
+		return nil, ErrRateLimited
+	}
+
+	return res, nil
 }

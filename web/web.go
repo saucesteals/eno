@@ -25,6 +25,8 @@ import (
 
 type Web struct {
 	api *api.API
+
+	verifiedCCId string
 }
 
 func New(api *api.API) *Web {
@@ -47,6 +49,8 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 	isProtected := strings.HasPrefix(path, "web-api/tiger/protected")
 	isOidc := strings.HasPrefix(path, "oidc/")
 
+	synchToken := newSynchToken()
+
 	var bodyReader io.Reader
 	if body != nil {
 		payload, err := json.Marshal(body)
@@ -55,15 +59,29 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 		}
 
 		if isProtected {
-			serverKey, err := a.GetGWLiteKey(ctx, ProductIdCDE)
+			var productId ProductId
+			if strings.HasPrefix(path, "web-api/tiger") {
+				productId = ProductIdCDE
+			} else {
+				productId = ProductIdProd
+			}
+
+			serverKey, err := a.GetGWLiteKey(ctx, productId)
 			if err != nil {
 				return nil, err
+			}
+
+			options := jose.EncrypterOptions{
+				ExtraHeaders: map[jose.HeaderKey]any{
+					"EVT_SYNCH_TOKEN": synchToken,
+					"content-type":    "application/json",
+				},
 			}
 
 			encrypter, err := jose.NewEncrypter(jose.A128GCM, jose.Recipient{
 				Algorithm: jose.RSA_OAEP_256,
 				Key:       serverKey,
-			}, nil)
+			}, &options)
 			if err != nil {
 				return nil, err
 			}
@@ -89,28 +107,26 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 		return nil, err
 	}
 
-	synchToken := newSynchToken()
-	req.Header = http.Header{
-		"accept-language":          {"en-US,en;q=0.9"},
-		"cache-control":            {"no-cache, no-store, must-revalidate"},
-		"dnt":                      {"1"},
-		"expires":                  {"0"},
-		"origin":                   {"https://myaccounts.capitalone.com"},
-		"pragma":                   {"no-cache"},
-		"priority":                 {"u=1, i"},
-		"sec-fetch-dest":           {"empty"},
-		"sec-fetch-mode":           {"cors"},
-		"sec-fetch-site":           {"none"},
-		"sec-fetch-storage-access": {"active"},
-		"sec-gpc":                  {"1"},
-		"evt_synch_token":          {synchToken},
-	}
+	req.Header.Add("evt_synch_token", synchToken)
+	req.Header.Add("accept-language", "en-US,en;q=0.9")
+	req.Header.Add("cache-control", "no-cache, no-store, must-revalidate")
+	req.Header.Add("dnt", "1")
+	req.Header.Add("expires", "0")
+	req.Header.Add("origin", "https://myaccounts.capitalone.com")
+	req.Header.Add("referer", "https://myaccounts.capitalone.com/")
+	req.Header.Add("pragma", "no-cache")
+	req.Header.Add("priority", "u=1, i")
+	req.Header.Add("sec-fetch-dest", "empty")
+	req.Header.Add("sec-fetch-mode", "cors")
+	req.Header.Add("sec-fetch-site", "none")
+	req.Header.Add("sec-gpc", "1")
 
 	if isProtected {
 		if key == nil {
 			return nil, errors.New("key is required")
 		}
 		req.Header.Set("accept", "application/jwt;v=1")
+		req.Header.Set("x-accept", "application/json;v=1")
 
 		serialized, err := json.Marshal(key)
 		if err != nil {
@@ -118,7 +134,11 @@ func (a *Web) newWebRequest(ctx context.Context, method, path string, body any, 
 		}
 
 		encoded := base64.StdEncoding.EncodeToString(serialized)
-		req.Header.Set("x-gw-client-public-key", string(encoded))
+		encoded = strings.ReplaceAll(encoded, "=", "")
+		encoded = strings.ReplaceAll(encoded, "+", "-")
+		encoded = strings.ReplaceAll(encoded, "/", "_")
+
+		req.Header.Set("x-gw-client-public-key", encoded)
 	} else if isOidc {
 		req.Header.Set("accept", "application/json, text/plain, */*")
 	} else {

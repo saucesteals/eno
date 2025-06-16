@@ -15,7 +15,9 @@ type OPTSmsContactDetails struct {
 }
 
 type OTPOptions struct {
-	SmsContactDetails []OPTSmsContactDetails `json:"smsContactDetails"`
+	SmsContactDetails  []OPTSmsContactDetails `json:"smsContactDetails"`
+	HomeContactDetails []OPTSmsContactDetails `json:"homeContactDetails"`
+	WorkContactDetails []OPTSmsContactDetails `json:"workContactDetails"`
 }
 
 func (a *Extension) OTPGenerate(ctx context.Context) (OTPOptions, error) {

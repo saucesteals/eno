@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/saucesteals/eno/api"
 	"github.com/saucesteals/eno/extension"
 )
 
@@ -22,7 +23,7 @@ func cleanName(name string) string {
 	)
 }
 
-func NewCardWriter(profile *Profile, card extension.PaymentCard, merchant extension.DataSource) (*CardWriter, error) {
+func NewCardWriter(profile *Profile, card extension.PaymentCard, prefix string) (*CardWriter, error) {
 	dir, err := profile.GetDirectory(
 		"cards",
 		cleanName(card.ProductDescription),
@@ -32,7 +33,7 @@ func NewCardWriter(profile *Profile, card extension.PaymentCard, merchant extens
 	}
 
 	t := time.Now().Format("2006_01_02_15_04_05")
-	fileName := path.Join(dir, fmt.Sprintf("%s_%s.csv", cleanName(merchant.Name), t))
+	fileName := path.Join(dir, fmt.Sprintf("%s_%s.csv", cleanName(prefix), t))
 	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, err
@@ -45,7 +46,7 @@ func (w *CardWriter) GetPath() string {
 	return w.path
 }
 
-func (w *CardWriter) Write(card *extension.Token) error {
+func (w *CardWriter) Write(card api.Token) error {
 	expirationParts := strings.Split(card.ExpirationDate, "/")
 	if len(expirationParts) != 2 {
 		return fmt.Errorf("invalid expiration date: %s", card.ExpirationDate)

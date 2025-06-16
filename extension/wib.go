@@ -31,30 +31,34 @@ func (a *Extension) newWibRequest(ctx context.Context, method, path string, body
 		return nil, err
 	}
 
-	req.Header = http.Header{
-		"accept":                   {"application/json"},
-		"accept-language":          {"en-US,en;q=0.9"},
-		"cache-control":            {"no-cache, no-store, must-revalidate"},
-		"dnt":                      {"1"},
-		"expires":                  {"0"},
-		"origin":                   {GetChromeExtensionURL()},
-		"pragma":                   {"no-cache"},
-		"priority":                 {"u=1, i"},
-		"sec-fetch-dest":           {"empty"},
-		"sec-fetch-mode":           {"cors"},
-		"sec-fetch-site":           {"none"},
-		"sec-fetch-storage-access": {"active"},
-		"sec-gpc":                  {"1"},
-		"client-correlation-id":    {a.clientReferenceId},
-		"User-Agent":               {a.device.UserAgent.String},
-		"x-device-fingerprint":     {a.fingerprint},
-		"x-apptype":                {a.device.UserAgent.Name},
-		"x-appversion":             {GetChromeExtensionVersion()},
-		"x-browserversion":         {a.device.UserAgent.Version},
-		"x-devicemodel":            {"Mac OS"},
-		"x-osversion":              {a.device.UserAgent.OSVersion},
-		"x-platform":               {"walletinbrowser"},
+	fingerprint, err := a.generateFingerprint()
+	if err != nil {
+		return nil, err
 	}
+
+	ua := a.api.GetUserAgent()
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("accept-language", "en-US,en;q=0.9")
+	req.Header.Add("cache-control", "no-cache, no-store, must-revalidate")
+	req.Header.Add("dnt", "1")
+	req.Header.Add("expires", "0")
+	req.Header.Add("origin", GetChromeExtensionURL())
+	req.Header.Add("pragma", "no-cache")
+	req.Header.Add("priority", "u=1, i")
+	req.Header.Add("sec-fetch-dest", "empty")
+	req.Header.Add("sec-fetch-mode", "cors")
+	req.Header.Add("sec-fetch-site", "none")
+	req.Header.Add("sec-fetch-storage-access", "active")
+	req.Header.Add("sec-gpc", "1")
+	req.Header.Add("client-correlation-id", a.clientReferenceId)
+
+	req.Header.Add("x-device-fingerprint", fingerprint)
+	req.Header.Add("x-apptype", ua.Name)
+	req.Header.Add("x-appversion", GetChromeExtensionVersion())
+	req.Header.Add("x-browserversion", ua.Version)
+	req.Header.Add("x-devicemodel", "Mac OS")
+	req.Header.Add("x-osversion", ua.OSVersion)
+	req.Header.Add("x-platform", "walletinbrowser")
 
 	if path == "token/defaultcard/tokenize" {
 		fingerprint, err := a.EncryptEWA(ctx, getEWAFingerprint())

@@ -64,9 +64,14 @@ func (a *Extension) ExpressLogin(ctx context.Context, expressToken string) (Expr
 		return response, err
 	}
 
+	fingerprint, err := a.generateFingerprint()
+	if err != nil {
+		return response, err
+	}
+
 	payload := Payload{
 		UserName:               username,
-		DeviceFingerPrint:      a.fingerprint,
+		DeviceFingerPrint:      fingerprint,
 		ExpressToken:           expressToken,
 		AuthenticationDeviceID: deviceId,
 		DeviceExtensionid:      a.device.ExtensionId,
