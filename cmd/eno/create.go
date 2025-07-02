@@ -40,42 +40,48 @@ func create(ctx context.Context, profile *Profile, capWeb *web.Web, capExt *exte
 			return fmt.Errorf("challenge assessment: %w", err)
 		}
 
-		smsContactPoints := []web.ChallengeContactPoint{}
-		for _, contactPoint := range assessment.AvailableMethods[0].AvailableMethodsPayload.ContactPoints {
-			if contactPoint.ContactPointDeliveryMediums.IsSms {
-				smsContactPoints = append(smsContactPoints, contactPoint)
+		if assessment.RedirectURL == "" {
+			if len(assessment.AvailableMethods) == 0 {
+				return fmt.Errorf("no available methods found")
 			}
-		}
 
-		if len(smsContactPoints) == 0 {
-			return fmt.Errorf("no sms contact points found")
-		}
+			smsContactPoints := []web.ChallengeContactPoint{}
+			for _, contactPoint := range assessment.AvailableMethods[0].AvailableMethodsPayload.ContactPoints {
+				if contactPoint.ContactPointDeliveryMediums.IsSms {
+					smsContactPoints = append(smsContactPoints, contactPoint)
+				}
+			}
 
-		fmt.Printf("Contact Points:\n")
-		for i, contactPoint := range smsContactPoints {
-			fmt.Printf("%d. %s\n", i+1, contactPoint.ContactPointMasked)
-		}
+			if len(smsContactPoints) == 0 {
+				return fmt.Errorf("no sms contact points found")
+			}
 
-		contactPointIndex, err := strconv.Atoi(ask("Select a contact point"))
-		if err != nil {
-			return fmt.Errorf("invalid contact point")
-		}
+			fmt.Printf("Contact Points:\n")
+			for i, contactPoint := range smsContactPoints {
+				fmt.Printf("%d. %s\n", i+1, contactPoint.ContactPointMasked)
+			}
 
-		contactPointIndex--
-		if contactPointIndex < 0 || contactPointIndex > len(smsContactPoints) {
-			return fmt.Errorf("unknown contact point")
-		}
+			contactPointIndex, err := strconv.Atoi(ask("Select a contact point"))
+			if err != nil {
+				return fmt.Errorf("invalid contact point")
+			}
 
-		smsContactPoint := smsContactPoints[contactPointIndex]
+			contactPointIndex--
+			if contactPointIndex < 0 || contactPointIndex > len(smsContactPoints) {
+				return fmt.Errorf("unknown contact point")
+			}
 
-		otp, err := capWeb.ChallengeVerification(ctx, assessment.PolicyProcessID, smsContactPoint)
-		if err != nil {
-			return fmt.Errorf("challenge verification: %w", err)
-		}
+			smsContactPoint := smsContactPoints[contactPointIndex]
 
-		otpValue := ask("Enter OTP value sent to " + smsContactPoint.ContactPointMasked)
-		if err := capWeb.ChallengeValidation(ctx, assessment.PolicyProcessID, otp.Otp, otpValue); err != nil {
-			return fmt.Errorf("challenge validation: %w", err)
+			otp, err := capWeb.ChallengeVerification(ctx, assessment.PolicyProcessID, smsContactPoint)
+			if err != nil {
+				return fmt.Errorf("challenge verification: %w", err)
+			}
+
+			otpValue := ask("Enter OTP value sent to " + smsContactPoint.ContactPointMasked)
+			if err := capWeb.ChallengeValidation(ctx, assessment.PolicyProcessID, otp.Otp, otpValue); err != nil {
+				return fmt.Errorf("challenge validation: %w", err)
+			}
 		}
 	} else {
 		merchantUrl := ask("Enter merchant URL (e.g. www.google.com)")

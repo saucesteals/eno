@@ -172,6 +172,7 @@ type ChallengeMethod struct {
 }
 
 type ChallengeAssessment struct {
+	RedirectURL      string            `json:"redirectUrl"`
 	AvailableMethods []ChallengeMethod `json:"availableMethods"`
 	PolicyProcessID  string            `json:"policyProcessId"`
 }
