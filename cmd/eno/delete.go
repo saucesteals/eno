@@ -26,7 +26,7 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 
 	cards := []web.ListedToken{}
 	limit := 50
-	for offset := 0; ; offset += limit {
+	for offset := 0; ; offset += 1 {
 		page, err := capWeb.ListTokens(ctx, card, nameFilter, offset, limit)
 		if err != nil {
 			return fmt.Errorf("list tokens: %w", err)
