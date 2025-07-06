@@ -54,13 +54,13 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 		}
 	}
 
+	for i, card := range cards {
+		fmt.Printf("%d. %s (%s)\n", i+1, card.TokenName, card.TokenLastFour)
+	}
+
 	log.Info("Found cards", "count", len(cards))
 	if len(cards) == 0 {
 		return nil
-	}
-
-	for i, card := range cards {
-		fmt.Printf("%d. %s (%s)\n", i+1, card.TokenName, card.TokenLastFour)
 	}
 
 	confirm := ask("Are you sure you want to delete these cards? (y/n)")
