@@ -2,29 +2,26 @@ package api
 
 import (
 	"net/url"
+	"time"
 
 	http "github.com/saucesteals/fhttp"
 )
 
 var (
-	wibURL = &url.URL{
+	cookieURL = &url.URL{
 		Scheme: "https",
-		Host:   "wib.capitalone.com",
-	}
-
-	verifiedURL = &url.URL{
-		Scheme: "https",
-		Host:   "verified.capitalone.com",
-	}
-
-	accountsURL = &url.URL{
-		Scheme: "https",
-		Host:   "myaccounts.capitalone.com",
+		Host:   ".capitalone.com",
 	}
 )
 
 func (a *API) GetCookies() []*http.Cookie {
-	return a.jar.Cookies(verifiedURL)
+	cookies := a.jar.Cookies(cookieURL)
+	for _, cookie := range cookies {
+		cookie.Domain = cookieURL.Host
+		cookie.Expires = time.Now().Add(time.Hour * 24 * 30)
+	}
+
+	return cookies
 }
 
 func (a *API) GetCookie(name string) string {
@@ -38,16 +35,13 @@ func (a *API) GetCookie(name string) string {
 }
 
 func (a *API) SetCookies(cookies []*http.Cookie) {
+	for _, cookie := range cookies {
+		cookie.Domain = cookieURL.Host
+		cookie.Expires = time.Now().Add(time.Hour * 24 * 30)
+	}
+
 	a.jar.SetCookies(
-		wibURL,
-		cookies,
-	)
-	a.jar.SetCookies(
-		verifiedURL,
-		cookies,
-	)
-	a.jar.SetCookies(
-		accountsURL,
+		cookieURL,
 		cookies,
 	)
 }
