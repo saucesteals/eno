@@ -54,7 +54,6 @@ func (a *API) initBrowser() (*rod.Browser, error) {
 func (a *API) initRouter(browser *rod.Browser, signIn chan error) (*rod.HijackRouter, error) {
 	router := browser.HijackRequests()
 
-	go router.Run()
 	err := router.Add("*", "", func(h *rod.Hijack) {
 		u := h.Request.URL()
 		if u.Host != "verified.capitalone.com" && u.Host != "wib.capitalone.com" {
@@ -139,6 +138,8 @@ func (a *API) initRouter(browser *rod.Browser, signIn chan error) (*rod.HijackRo
 		a.SetCookies(w1bCookies)
 		signIn <- nil
 	})
+
+	go router.Run()
 
 	return router, err
 }
