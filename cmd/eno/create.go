@@ -130,7 +130,7 @@ func create(ctx context.Context, profile *Profile, capWeb *web.Web, capExt *exte
 			break
 		}
 
-		log.Info("Created token", "token", token.Token)
+		log.Info(fmt.Sprintf("(%d/%d) Created token", i+1, count), "token", token.Token)
 
 		err = w.Write(token)
 		if err != nil {
