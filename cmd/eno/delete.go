@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strconv"
 	"time"
 
@@ -25,35 +24,34 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 	}
 
 	cards := []web.ListedToken{}
-	limit := 50
+	total := 0
 	for offset := 0; ; offset += 1 {
-		page, err := capWeb.ListTokens(ctx, card, nameFilter, offset, limit)
+		page, err := capWeb.ListTokens(ctx, card, nameFilter, offset, 50)
 		if err != nil {
 			return fmt.Errorf("list tokens: %w", err)
 		}
 
-		cards = append(cards, page.Entries...)
-		if page.Count <= len(cards) {
+		for _, token := range page.Entries {
+			if minDayAge > 0 {
+				tokenCreatedAt, err := time.ParseInLocation("2006-01-02T15:04:05", token.TokenCreatedTimestamp, time.UTC)
+				if err != nil {
+					return fmt.Errorf("parse token created at: %w", err)
+				}
+
+				dayAge := int(time.Since(tokenCreatedAt).Hours() / 24)
+				if dayAge < minDayAge {
+					log.Info("Skipping card", "card", token.TokenName, "age", dayAge)
+					continue
+				}
+			}
+
+			cards = append(cards, token)
+		}
+
+		total += len(page.Entries)
+		if page.Count <= total {
 			break
 		}
-	}
-
-	if minDayAge > 0 {
-		cards = slices.DeleteFunc(cards, func(card web.ListedToken) bool {
-			tokenCreatedAt, err := time.ParseInLocation("2006-01-02T15:04:05", card.TokenCreatedTimestamp, time.UTC)
-			if err != nil {
-				log.Error("Failed to parse token created at", "error", err)
-				return true
-			}
-
-			dayAge := int(time.Since(tokenCreatedAt).Hours() / 24)
-			if dayAge < minDayAge {
-				log.Info("Skipping card", "card", card.TokenName, "age", dayAge)
-				return true
-			}
-
-			return false
-		})
 	}
 
 	log.Info("Found cards", "count", len(cards))
