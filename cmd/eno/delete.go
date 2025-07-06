@@ -69,8 +69,8 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 	}
 
 	cardLastFour := card.CardNumber[len(card.CardNumber)-4:]
-	for _, token := range cards {
-		fmt.Printf("Deleting %s... ", token.TokenName)
+	for i, token := range cards {
+		fmt.Printf("(%d/%d) Deleting %s... ", i+1, len(cards), token.TokenName)
 
 		err = capWeb.UpdateToken(ctx, web.UpdateTokenPayload{
 			AllowAuthorizations: true,
