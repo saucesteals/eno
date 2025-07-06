@@ -25,7 +25,7 @@ import (
 var (
 	log = slog.New(tint.NewHandler(colorable.NewColorable(os.Stdout), &tint.Options{
 		Level:      slog.LevelInfo,
-		TimeFormat: time.DateOnly,
+		TimeFormat: time.TimeOnly,
 	}))
 )
 
