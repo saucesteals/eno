@@ -88,6 +88,7 @@ func delete(ctx context.Context, capWeb *web.Web, card extension.PaymentCard) er
 			TokenReferenceID:    token.TokenReferenceID,
 		})
 		if err != nil {
+			fmt.Println("Failed")
 			log.Error("Failed to delete token", "error", err)
 			continue
 		}
