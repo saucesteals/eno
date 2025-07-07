@@ -11,8 +11,8 @@ require (
 	github.com/lmittmann/tint v1.1.2
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mileusna/useragent v1.3.5
-	github.com/saucesteals/fhttp v0.0.0-20240117034418-b4f835e6c226
-	github.com/saucesteals/mimic v0.0.0-20250612024653-ecfa268a0c0e
+	github.com/saucesteals/fhttp v1.0.1
+	github.com/saucesteals/mimic v1.0.1
 )
 
 require (
