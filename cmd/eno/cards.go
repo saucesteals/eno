@@ -23,7 +23,7 @@ func cleanName(name string) string {
 	)
 }
 
-func NewCardWriter(profile *Profile, card extension.PaymentCard, prefix string) (*CardWriter, error) {
+func NewCardWriter(profile *Profile, card extension.PaymentCard, suffix string) (*CardWriter, error) {
 	dir, err := profile.GetDirectory(
 		"cards",
 		cleanName(card.ProductDescription),
@@ -33,7 +33,7 @@ func NewCardWriter(profile *Profile, card extension.PaymentCard, prefix string) 
 	}
 
 	t := time.Now().Format("2006_01_02_15_04_05")
-	fileName := path.Join(dir, fmt.Sprintf("%s_%s.csv", t, cleanName(prefix)))
+	fileName := path.Join(dir, fmt.Sprintf("%s_%s.csv", t, cleanName(suffix)))
 	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, err
